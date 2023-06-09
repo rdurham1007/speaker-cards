@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html class="no-js" lang="">
+  <head>
+    <meta charset="utf-8" />
+    <title></title>
+    <meta name="description" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <meta property="og:title" content="" />
+    <meta property="og:type" content="" />
+    <meta property="og:url" content="" />
+    <meta property="og:image" content="" />
+
+    <link rel="manifest" href="site.webmanifest" />
+    <link rel="apple-touch-icon" href="icon.png" />
+    <!-- Place favicon.ico in the root directory -->
+
+    <link rel="stylesheet" href="css/normalize.css" />
+    <link rel="stylesheet" href="css/main.css" />
+
+    <meta name="theme-color" content="#fafafa" />
+  </head>
+
+  <body>
+    <div id="card-container" style="width: 75%; float: left"></div>
+    <div style="width: 25%; float: right">
+      <div id="control-group" style="padding: 10px">
+        <input type="file" onchange="changeImage(this);" />
+        <div id="text-controls">
+          <input type="text" value="North Dallas Developers" id="event-input" />
+          <fieldset>
+            <legend>Topic/Title</legend>
+            <input type="text" placeholder="Line 1" id="title-input" />
+            <input type="text" placeholder="Line 2" id="title-input-2" />
+          </fieldset>
+        </div>
+        <input type="button" onclick="download()" value="Download" />
+      </div>
+    </div>
+
+    <script src="js/vendor/modernizr-3.11.2.min.js"></script>
+    <script src="js/plugins.js"></script>
+    <script src="js/main.js"></script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        fetch("templates/ImprovingTalks.svg")
+          .then((x) => x.text())
+          .then((svgText) => loadCard(svgText));
+      });
+
+      var changeImage = function (input) {
+        if (input.files && input.files[0]) {
+          var reader = new FileReader();
+
+          reader.onload = function (e) {
+            var photo = document.getElementById("Photo-PH");
+            photo.setAttribute("href", e.target.result);
+          };
+
+          reader.readAsDataURL(input.files[0]);
+        }
+      };
+
+      var loadDefaultImage = function () {
+        var src = "img/placeholder-man.jpg";
+
+        (async function (defaultImage) {
+          let blob = await fetch(defaultImage).then((r) => r.blob());
+          var reader = new FileReader();
+          reader.onload = function (e) {
+            var photo = document.getElementById("Photo-PH");
+            photo.setAttribute("href", e.target.result);
+          };
+
+          reader.readAsDataURL(blob);
+        })(src);
+      };
+
+      var loadCard = function (svgCardContent) {
+        const container = document.getElementById("card-container");
+        container.innerHTML = svgCardContent;
+
+        loadDefaultImage();
+
+        var photo = document.getElementById("Photo-PH");
+        var photoMover = document.getElementById("photo-mover");
+        console.log(photo);
+
+        var prevX, prevY;
+
+        photoMover.addEventListener("mousedown", function (e) {
+          prevX = e.x;
+          prevY = e.y;
+
+          var photoX = parseFloat(photo.getAttribute("x"));
+          var photoY = parseFloat(photo.getAttribute("y"));
+
+          photoMover.addEventListener("mousemove", moveCard);
+          photoMover.addEventListener("mouseup", endMove);
+
+          function moveCard(e) {
+            var diffX = e.x - prevX;
+            var diffY = e.y - prevY;
+            prevX = e.x;
+            prevY = e.y;
+            photoX += diffX;
+            photoY += diffY;
+            console.log(photoX + "|" + photoY);
+            photo.setAttribute("x", photoX.toString());
+            photo.setAttribute("y", photoY.toString());
+          }
+
+          function endMove() {
+            photoMover.removeEventListener("mousemove", moveCard);
+            photoMover.removeEventListener("mouseup", endMove);
+          }
+        });
+
+        var eventLabel = document.getElementById("event-label");
+        var textControls = document.getElementById("text-controls");
+        var eventInput = document.getElementById("event-input");
+        var titleLabel = document.getElementById("title-label");
+        var titleInput = document.getElementById("title-input");
+        var titleInput2 = document.getElementById("title-input-2");
+        var titleLine2 = document.getElementById("title-line2");
+        titleLine2.setAttribute("dy", 68);
+
+        eventInput.addEventListener("input", function (e) {
+          eventLabel.innerHTML = e.target.value;
+        });
+
+        titleInput.addEventListener("input", function (e) {
+          titleLabel.innerHTML = e.target.value;
+        });
+
+        titleInput2.addEventListener("input", function (e) {
+          titleLine2.innerHTML = e.target.value;
+        });
+      };
+
+      function download() {
+        var canvas = document.createElement("canvas");
+        var ctx = canvas.getContext("2d");
+        var svg = document.querySelector("svg");
+        var data = new XMLSerializer().serializeToString(svg);
+
+        var viewbox = svg.getAttribute("viewBox").split(" ");
+        var width = Number(viewbox[2]);
+        var height = Number(viewbox[3]);
+
+        console.log(width);
+        console.log(height);
+
+        canvas.setAttribute("width", width);
+        canvas.setAttribute("height", height);
+
+        var DOMURL = window.URL || window.webkitURL || window;
+
+        var img = new Image();
+        var svgBlob = new Blob([data], { type: "image/svg+xml;charset=utf-8" });
+        var url = DOMURL.createObjectURL(svgBlob);
+
+        img.onload = function () {
+          ctx.drawImage(img, 0, 0, width, height);
+          DOMURL.revokeObjectURL(url);
+
+          var imgURI = canvas
+            .toDataURL("image/png")
+            .replace("image/png", "image/octet-stream");
+
+          triggerDownload(imgURI);
+        };
+
+        img.src = url;
+      }
+
+      function triggerDownload(imgURI) {
+        var evt = new MouseEvent("click", {
+          view: window,
+          bubbles: false,
+          cancelable: true,
+        });
+
+        var a = document.createElement("a");
+        a.setAttribute("download", "MY_COOL_IMAGE.png");
+        a.setAttribute("href", imgURI);
+        a.setAttribute("target", "_blank");
+
+        a.dispatchEvent(evt);
+      }
+    </script>
+  </body>
+</html>
